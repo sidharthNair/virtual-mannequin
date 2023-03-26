@@ -5,7 +5,7 @@ export const floorVSText = `
     uniform mat4 uWorld;
     uniform mat4 uView;
     uniform mat4 uProj;
-    
+
     attribute vec4 aVertPos;
 
     varying vec4 vClipPos;
@@ -39,7 +39,7 @@ export const floorFSText = `
         vec4 lightDirection = uLightPos - wsPos;
         float dot_nl = dot(normalize(lightDirection), vec4(0.0, 1.0, 0.0, 0.0));
 	    dot_nl = clamp(dot_nl, 0.0, 1.0);
-	
+
         gl_FragColor = vec4(clamp(dot_nl * color, 0.0, 1.0), 1.0);
     }
 `;
@@ -56,11 +56,11 @@ export const sceneVSText = `
     attribute vec4 v1;
     attribute vec4 v2;
     attribute vec4 v3;
-    
+
     varying vec4 lightDir;
     varying vec2 uv;
     varying vec4 normal;
- 
+
     uniform vec4 lightPosition;
     uniform mat4 mWorld;
     uniform mat4 mView;
@@ -73,10 +73,10 @@ export const sceneVSText = `
         vec3 trans = vertPosition;
         vec4 worldPosition = mWorld * vec4(trans, 1.0);
         gl_Position = mProj * mView * worldPosition;
-        
+
         //  Compute light direction and transform to camera coordinates
         lightDir = lightPosition - worldPosition;
-        
+
         vec4 aNorm4 = vec4(aNorm, 0.0);
         normal = normalize(mWorld * vec4(aNorm, 0.0));
 
@@ -102,7 +102,7 @@ export const skeletonVSText = `
 
     attribute vec3 vertPosition;
     attribute float boneIndex;
-    
+
     uniform mat4 mWorld;
     uniform mat4 mView;
     uniform mat4 mProj;
