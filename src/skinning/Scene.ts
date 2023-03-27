@@ -1,5 +1,8 @@
-import { Mat4, Quat, Vec3 } from "../lib/TSM.js";
+import { Mat3, Mat4, Quat, Vec3 } from "../lib/TSM.js";
 import { AttributeLoader, MeshGeometryLoader, BoneLoader, MeshLoader } from "./AnimationFileLoader.js";
+
+let BONE_RADIUS = 0.1;
+let RAY_EPSILON = 0.0;
 
 export class Attribute {
     values: Float32Array;
@@ -50,6 +53,8 @@ export class Bone {
     public offset: number; // used when parsing the Collada file---you probably don't need to touch these
     public initialTransformation: Mat4;
 
+    public highlighted: boolean;
+
     constructor(bone: BoneLoader) {
         this.parent = bone.parent;
         this.children = Array.from(bone.children);
@@ -60,6 +65,91 @@ export class Bone {
         this.initialPosition = bone.initialPosition.copy();
         this.initialEndpoint = bone.initialEndpoint.copy();
         this.initialTransformation = bone.initialTransformation.copy();
+        this.highlighted = false;
+    }
+
+    public intersect(pos: Vec3, dir: Vec3): number {
+        // Construct rotation matrix (to align cylinder to axis)
+        let z: Vec3 = Vec3.difference(this.endpoint, this.position).normalize();
+        let y: Vec3 = Vec3.cross(z, new Vec3([1.0, 0.0, 0.0])).normalize();
+        let x: Vec3 = Vec3.cross(z, y).normalize();
+        let rotation: Mat3 = Mat3.product(
+            new Mat3([
+                0.0, 0.0, 1.0,
+                1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0
+            ]),
+            new Mat3([
+                z.x, z.y, z.z,
+                x.x, x.y, x.z,
+                y.x, y.y, y.z,
+            ]).inverse()
+        );
+
+        // Rotate to aligned axis coordinates
+        let transformedPosition: Vec3 = rotation.multiplyVec3(this.position);
+        let transformedEndpoint: Vec3 = rotation.multiplyVec3(this.endpoint);
+        pos = rotation.multiplyVec3(pos);
+        dir = rotation.multiplyVec3(dir).normalize();
+
+        // Translate start of bone to origin in new coordinate space
+        pos = Vec3.difference(pos, transformedPosition);
+        transformedEndpoint = Vec3.difference(transformedEndpoint, transformedPosition)
+
+        return this.intersectBody(pos, dir, Math.min(0.0, transformedEndpoint.z), Math.max(0.0, transformedEndpoint.z));
+    }
+
+    // Code for ray cylinder intersection adapted from Cylinder.cpp in the ray tracer project
+    public intersectBody(pos: Vec3, dir: Vec3, min: number, max: number): number {
+        let x0 = pos.x;
+        let y0 = pos.y;
+        let x1 = dir.x;
+        let y1 = dir.y;
+
+        let a = x1 * x1 + y1 * y1;
+        let b = 2.0 * (x0 * x1 + y0 * y1);
+        let c = x0 * x0 + y0 * y0 - (BONE_RADIUS * BONE_RADIUS);
+
+        if (0.0 == a) {
+            // This implies that x1 = 0.0 and y1 = 0.0, which further
+            // implies that the ray is aligned with the body of the cylinder,
+            // so no intersection.
+            return Number.MAX_SAFE_INTEGER;
+        }
+
+        let discriminant = b * b - 4.0 * a * c;
+
+        if (discriminant < 0.0) {
+            return Number.MAX_SAFE_INTEGER;
+        }
+
+        discriminant = Math.sqrt(discriminant);
+
+        let t2 = (-b + discriminant) / (2.0 * a);
+
+        if (t2 <= RAY_EPSILON) {
+            return Number.MAX_SAFE_INTEGER;
+        }
+
+        let t1 = (-b - discriminant) / (2.0 * a);
+
+        if (t1 > RAY_EPSILON) {
+            // Two intersections.
+            let P: Vec3 = Vec3.sum(pos, dir.scale(t1));
+            let z = P.z;
+            if (z >= min && z <= max) {
+                // It's okay.
+                return t1;
+            }
+        }
+
+        let P: Vec3 = Vec3.sum(pos, dir.scale(t2));
+        let z = P.z;
+        if (z >= min && z <= max) {
+            return t2;
+        }
+
+        return Number.MAX_SAFE_INTEGER;
     }
 }
 
@@ -122,5 +212,16 @@ export class Mesh {
             }
         });
         return trans;
+    }
+
+    public getBoneColors(): Float32Array {
+        let colors = new Float32Array(4 * this.bones.length);
+        this.bones.forEach((bone, index) => {
+            let color = bone.highlighted ? [0.0, 1.0, 1.0, 1.0] : [1.0, 0.0, 0.0, 1.0]
+            for (let i = 0; i < color.length; i++) {
+                colors[4 * index + i] = color[i]
+            }
+        });
+        return colors;
     }
 }

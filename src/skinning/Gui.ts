@@ -217,6 +217,36 @@ export class GUI implements IGUI {
         // You will want logic here:
         // 1) To highlight a bone, if the mouse is hovering over a bone;
         // 2) To rotate a bone, if the mouse button is pressed and currently highlighting a bone.
+
+        // Convert NDC mouse coordinates to world coordinates (NDC -> (P^-1) Camera -> (V^-1) World)
+        let mouseInWorld: Vec4 = this.viewMatrix().inverse().multiplyVec4(
+            this.projMatrix().inverse().multiplyVec4(
+                new Vec4([(2.0 * x / this.width) - 1.0, (-2.0 * y / this.viewPortHeight) + 1.0, -1.0, 1.0])
+            )
+        );
+        mouseInWorld.scale(1.0 / mouseInWorld.w);
+
+        let pos: Vec3 = this.camera.pos();
+        let dir: Vec3 = Vec3.difference(new Vec3([mouseInWorld.x, mouseInWorld.y, mouseInWorld.z]), pos).normalize();
+
+        let bones: Bone[] = this.animation.getScene().meshes[0].bones;
+        let minT: number = Number.MAX_SAFE_INTEGER;
+        let minBone: any = null;
+
+        for (let i = 0; i < bones.length; i++) {
+            let t = bones[i].intersect(pos, dir)
+            if (t < minT) {
+                minT = t;
+                minBone = bones[i];
+            }
+            else {
+                bones[i].highlighted = false;
+            }
+        }
+
+        if (minBone != null) {
+            minBone.highlighted = true;
+        }
     }
 
     public getModeString(): string {
