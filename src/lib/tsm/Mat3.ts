@@ -10,7 +10,7 @@ import { epsilon } from "./Constants.js";
  * A 3x3 Matrix of numbers.
  */
 export class Mat3 {
-  /** 
+  /**
    * The identity matrix where the diagonal is 1s
    * and the off diagonals are 0s
    */
@@ -19,7 +19,7 @@ export class Mat3 {
   /**
    * Computes the matrix product m1 * m2 and puts the result
    * in dest. If dest is not provided then a new Mat3 is created
-   * and returned 
+   * and returned
    */
   public static product(m1: Mat3, m2: Mat3, dest?: Mat3): Mat3 {
     if (! dest) {
@@ -92,7 +92,7 @@ export class Mat3 {
   }
 
   /**
-   * Sets the elements of the matrix to 
+   * Sets the elements of the matrix to
    * the given values.
    */
   public init(values: number[]): Mat3 {
@@ -158,8 +158,8 @@ export class Mat3 {
    */
   public col(index: number): number[] {
     return [
-      this.values[index * 3], 
-      this.values[index * 3 + 1], 
+      this.values[index * 3],
+      this.values[index * 3 + 1],
       this.values[index * 3 + 2]
     ];
   }
@@ -316,7 +316,7 @@ export class Mat3 {
     dest.values[0] = a00 * b00 + a01 * b10 + a02 * b20;
     dest.values[1] = a10 * b00 + a11 * b10 + a12 * b20;
     dest.values[2] = a20 * b00 + a21 * b10 + a22 * b20;
-    
+
     dest.values[3] = a00 * b01 + a01 * b11 + a02 * b21;
     dest.values[4] = a10 * b01 + a11 * b11 + a12 * b21;
     dest.values[5] = a20 * b01 + a21 * b11 + a22 * b21;
@@ -377,9 +377,9 @@ export class Mat3 {
   /**
    * Creates a Mat4 from this Mat3 and puts the result
    * in dest. If dest is not provided then a new Mat4 is
-   * created and returned. All extra elements in the new 
+   * created and returned. All extra elements in the new
    * Mat4 are zero except for the bottom right element which
-   * is 1. 
+   * is 1.
    */
   public toMat4(dest?: Mat4): Mat4 {
     if (!dest) {
@@ -460,27 +460,27 @@ export class Mat3 {
     switch (biggestIndex) {
       case 0:
         dest.w = biggestVal;
-        dest.x = (m12 - m21) * mult;
-        dest.y = (m20 - m02) * mult;
-        dest.z = (m01 - m10) * mult;
+        dest.x = (m21 - m12) * mult;
+        dest.y = (m02 - m20) * mult;
+        dest.z = (m10 - m01) * mult;
         break;
 
       case 1:
-        dest.w = (m12 - m21) * mult;
+        dest.w = (m21 - m12) * mult;
         dest.x = biggestVal;
         dest.y = (m01 + m10) * mult;
         dest.z = (m20 + m02) * mult;
         break;
 
       case 2:
-        dest.w = (m20 - m02) * mult;
+        dest.w = (m02 - m20) * mult;
         dest.x = (m01 + m10) * mult;
         dest.y = biggestVal;
         dest.z = (m12 + m21) * mult;
         break;
 
       case 3:
-        dest.w = (m01 - m10) * mult;
+        dest.w = (m10 - m01) * mult;
         dest.x = (m20 + m02) * mult;
         dest.y = (m12 + m21) * mult;
         dest.z = biggestVal;
@@ -542,7 +542,7 @@ export class Mat3 {
     dest.values[0] = a00 * b00 + a01 * b10 + a02 * b20;
     dest.values[1] = a10 * b00 + a11 * b10 + a12 * b20;
     dest.values[2] = a20 * b00 + a21 * b10 + a22 * b20;
-    
+
     dest.values[3] = a00 * b01 + a01 * b11 + a02 * b21;
     dest.values[4] = a10 * b01 + a11 * b11 + a12 * b21;
     dest.values[5] = a20 * b01 + a21 * b11 + a22 * b21;
@@ -550,7 +550,7 @@ export class Mat3 {
     dest.values[6] = a00 * b02 + a01 * b12 + a02 * b22;
     dest.values[7] = a10 * b02 + a11 * b12 + a12 * b22;
     dest.values[8] = a20 * b02 + a21 * b12 + a22 * b22;
-    
+
     return dest;
   }
 
