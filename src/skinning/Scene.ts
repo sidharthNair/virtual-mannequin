@@ -1,4 +1,4 @@
-import { Mat3, Mat4, Quat, Vec3 } from "../lib/TSM.js";
+import { Mat3, Mat4, Quat, Vec3, Vec4 } from "../lib/TSM.js";
 import { AttributeLoader, MeshGeometryLoader, BoneLoader, MeshLoader } from "./AnimationFileLoader.js";
 
 let BONE_RADIUS = 0.1;
@@ -54,6 +54,9 @@ export class Bone {
     public initialTransformation: Mat4;
 
     public highlighted: boolean;
+    public T_i: Quat;
+    public B_ij: Mat4;
+    public D_i: Mat4;
 
     constructor(bone: BoneLoader) {
         this.parent = bone.parent;
@@ -66,6 +69,8 @@ export class Bone {
         this.initialEndpoint = bone.initialEndpoint.copy();
         this.initialTransformation = bone.initialTransformation.copy();
         this.highlighted = false;
+        this.T_i = new Quat().setIdentity();
+        this.B_ij = new Mat4().setIdentity();
     }
 
     public intersect(pos: Vec3, dir: Vec3): number {
@@ -73,7 +78,7 @@ export class Bone {
         let z: Vec3 = Vec3.difference(this.endpoint, this.position).normalize();
         let y: Vec3 = Vec3.cross(z, new Vec3([1.0, 0.0, 0.0])).normalize();
         let x: Vec3 = Vec3.cross(z, y).normalize();
-        let rotation: Mat3 = Mat3.product(
+        let alignmentMatrix: Mat3 = Mat3.product(
             new Mat3([
                 0.0, 0.0, 1.0,
                 1.0, 0.0, 0.0,
@@ -87,10 +92,10 @@ export class Bone {
         );
 
         // Rotate to aligned axis coordinates
-        let transformedPosition: Vec3 = rotation.multiplyVec3(this.position);
-        let transformedEndpoint: Vec3 = rotation.multiplyVec3(this.endpoint);
-        pos = rotation.multiplyVec3(pos);
-        dir = rotation.multiplyVec3(dir).normalize();
+        let transformedPosition: Vec3 = alignmentMatrix.multiplyVec3(this.position);
+        let transformedEndpoint: Vec3 = alignmentMatrix.multiplyVec3(this.endpoint);
+        pos = alignmentMatrix.multiplyVec3(pos);
+        dir = alignmentMatrix.multiplyVec3(dir).normalize();
 
         // Translate start of bone to origin in new coordinate space
         pos = Vec3.difference(pos, transformedPosition);
@@ -151,6 +156,10 @@ export class Bone {
 
         return Number.MAX_SAFE_INTEGER;
     }
+
+    public setRotation(axis: Vec3, radians: number) {
+        this.T_i = Quat.product(this.T_i, Quat.fromAxisAngle(axis, radians))
+    }
 }
 
 export class Mesh {
@@ -165,13 +174,28 @@ export class Mesh {
     private bonePositions: Float32Array;
     private boneIndexAttribute: Float32Array;
 
+    public selectedBone: Bone | null;
+
     constructor(mesh: MeshLoader) {
         this.geometry = new MeshGeometry(mesh.geometry);
         this.worldMatrix = mesh.worldMatrix.copy();
         this.rotation = mesh.rotation.copy();
         this.bones = [];
         mesh.bones.forEach(bone => {
-            this.bones.push(new Bone(bone));
+            let b: Bone = new Bone(bone);
+            let relativePosition: Vec3 = Vec3.difference(
+                b.initialPosition,
+                (b.parent == -1) ?
+                    new Vec3([0.0, 0.0, 0.0]) :
+                    mesh.bones[b.parent].initialPosition
+            )
+            b.B_ij = new Mat4([
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, 1.0, 0.0,
+                relativePosition.x, relativePosition.y, relativePosition.z, 1.0
+            ])
+            this.bones.push(b);
         });
         this.materialName = mesh.materialName;
         this.imgSrc = null;
@@ -223,5 +247,43 @@ export class Mesh {
             }
         });
         return colors;
+    }
+
+    public updateBone(bone: Bone) {
+        var queue: Bone[] = [];
+        queue.push(bone)
+        while (queue.length != 0) {
+            let curr: Bone = queue[0];
+            queue.shift();
+            if (curr === bone) {
+                curr.rotation = this.computeRotation(curr);
+                curr.D_i = this.computeDeformation(curr);
+            }
+            else {
+                curr.rotation = Quat.product(this.bones[curr.parent].rotation, curr.T_i);
+                curr.D_i = Mat4.product(this.bones[curr.parent].D_i, Mat4.product(curr.B_ij, curr.T_i.toMat4()));
+            }
+            curr.position = new Vec3(curr.D_i.multiplyVec4(new Vec4([0, 0, 0, 1])).xyz)
+            for (let i = 0; i < curr.children.length; i++) {
+                queue.push(this.bones[curr.children[i]]);
+            }
+        }
+    }
+
+    public computeRotation(bone: Bone) {
+        if (bone.parent == -1)
+            return bone.T_i;
+        return Quat.product(this.computeRotation(this.bones[bone.parent]), bone.T_i);
+    }
+
+    public computeDeformation(bone: Bone): Mat4 {
+        let deformation = Mat4.product(bone.B_ij, bone.T_i.toMat4());
+        if (bone.parent == -1) {
+            return deformation;
+        }
+        else {
+            return Mat4.product(this.computeDeformation(this.bones[bone.parent]), deformation);
+        }
+
     }
 }
