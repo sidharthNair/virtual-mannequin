@@ -193,7 +193,7 @@ export class GUI implements IGUI {
             let selectedBone: Bone | null = this.animation.getScene().meshes[0].selectedBone;
             if (selectedBone != null) {
                 let invertedMouseDir: Vec3 = new Vec3([-mouseDir.x, -mouseDir.y, 0.0]);
-                let axis: Vec3 = Vec3.cross(Vec3.difference(selectedBone.endpoint, selectedBone.position), invertedMouseDir);
+                let axis: Vec3 = Vec3.cross(this.camera.forward(), invertedMouseDir);
                 selectedBone.setRotation(axis, GUI.rotationSpeed);
                 this.animation.getScene().meshes[0].updateBone(selectedBone);
             }
@@ -345,7 +345,7 @@ export class GUI implements IGUI {
                 let selectedBone: Bone | null = this.animation.getScene().meshes[0].selectedBone;
                 if (selectedBone != null) {
                     let axis: Vec3 = Vec3.difference(selectedBone.position, selectedBone.endpoint);
-                    selectedBone.setRotation(axis, GUI.rotationSpeed);
+                    selectedBone.setRotation(axis, GUI.rollSpeed);
                     this.animation.getScene().meshes[0].updateBone(selectedBone);
                 }
                 else {
@@ -357,7 +357,7 @@ export class GUI implements IGUI {
                 let selectedBone: Bone | null = this.animation.getScene().meshes[0].selectedBone;
                 if (selectedBone != null) {
                     let axis: Vec3 = Vec3.difference(selectedBone.endpoint, selectedBone.position);
-                    selectedBone.setRotation(axis, GUI.rotationSpeed);
+                    selectedBone.setRotation(axis, GUI.rollSpeed);
                     this.animation.getScene().meshes[0].updateBone(selectedBone);
                 }
                 else {

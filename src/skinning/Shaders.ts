@@ -85,8 +85,13 @@ export const sceneVSText = `
         //  Compute light direction and transform to camera coordinates
         lightDir = lightPosition - worldPosition;
 
-        vec4 aNorm4 = vec4(aNorm, 0.0);
-        normal = normalize(mWorld * vec4(aNorm, 0.0));
+        vec3 transformedNormal =
+            (skinWeights.x * vec3(qtrans(jRots[int(skinIndices.x)], aNorm))) +
+            (skinWeights.y * vec3(qtrans(jRots[int(skinIndices.y)], aNorm))) +
+            (skinWeights.z * vec3(qtrans(jRots[int(skinIndices.z)], aNorm))) +
+            (skinWeights.w * vec3(qtrans(jRots[int(skinIndices.w)], aNorm)));
+        vec4 aNorm4 = vec4(transformedNormal, 0.0);
+        normal = normalize(mWorld * aNorm4);
 
         uv = aUV;
     }

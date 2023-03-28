@@ -2,7 +2,7 @@ import { Mat3, Mat4, Quat, Vec3, Vec4 } from "../lib/TSM.js";
 import { AttributeLoader, MeshGeometryLoader, BoneLoader, MeshLoader } from "./AnimationFileLoader.js";
 
 let BONE_RADIUS = 0.1;
-let RAY_EPSILON = 0.0;
+let RAY_EPSILON = 0.0001;
 
 export class Attribute {
     values: Float32Array;
@@ -71,6 +71,7 @@ export class Bone {
         this.highlighted = false;
         this.T_i = new Quat().setIdentity();
         this.B_ij = new Mat4().setIdentity();
+        this.D_i = new Mat4().setIdentity();
     }
 
     public intersect(pos: Vec3, dir: Vec3): number {
@@ -263,7 +264,8 @@ export class Mesh {
                 curr.rotation = Quat.product(this.bones[curr.parent].rotation, curr.T_i);
                 curr.D_i = Mat4.product(this.bones[curr.parent].D_i, Mat4.product(curr.B_ij, curr.T_i.toMat4()));
             }
-            curr.position = new Vec3(curr.D_i.multiplyVec4(new Vec4([0, 0, 0, 1])).xyz)
+            curr.position = curr.D_i.multiplyPt3(Vec3.difference(curr.initialPosition, curr.initialPosition));
+            curr.endpoint = curr.D_i.multiplyPt3(Vec3.difference(curr.initialEndpoint, curr.initialPosition));
             for (let i = 0; i < curr.children.length; i++) {
                 queue.push(this.bones[curr.children[i]]);
             }
