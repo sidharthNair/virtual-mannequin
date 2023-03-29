@@ -317,6 +317,10 @@ export class GUI implements IGUI {
                 this.animation.setScene("/static/assets/skinning/wolf.dae");
                 break;
             }
+            case "Digit8": {
+                this.animation.setScene("/static/assets/skinning/xerneas.dae");
+                break;
+            }
             case "KeyW": {
                 this.camera.offset(
                     this.camera.forward().negate(),
@@ -344,7 +348,7 @@ export class GUI implements IGUI {
             case "ArrowLeft": {
                 let selectedBone: Bone | null = this.animation.getScene().meshes[0].selectedBone;
                 if (selectedBone != null) {
-                    let axis: Vec3 = Vec3.difference(selectedBone.position, selectedBone.endpoint);
+                    let axis: Vec3 = Vec3.difference(selectedBone.initialPosition, selectedBone.initialEndpoint);
                     selectedBone.setRotation(axis, GUI.rollSpeed);
                     this.animation.getScene().meshes[0].updateBone(selectedBone);
                 }
@@ -356,7 +360,7 @@ export class GUI implements IGUI {
             case "ArrowRight": {
                 let selectedBone: Bone | null = this.animation.getScene().meshes[0].selectedBone;
                 if (selectedBone != null) {
-                    let axis: Vec3 = Vec3.difference(selectedBone.endpoint, selectedBone.position);
+                    let axis: Vec3 = Vec3.difference(selectedBone.initialEndpoint, selectedBone.initialPosition);
                     selectedBone.setRotation(axis, GUI.rollSpeed);
                     this.animation.getScene().meshes[0].updateBone(selectedBone);
                 }
